@@ -2,23 +2,37 @@
 module Main where
 
 import BasePrelude
-
-type PortfolioSize = Int
+import Data.Aeson
+import Data.Text
 
 data Asset = Asset
-      { symbol :: String
-      , alloc :: Float
-      } deriving (Eq, Show, Read)
+      { symbol :: !Text
+      , alloc  :: !Float
+      , qty    :: !Int
+      , price  :: !Float
+      } deriving (Eq, Show, Read, Generic)
 
-data TargetPortfolio = TargetPortfolio
-      { assests :: [Asset]
-      , portSize :: PortfolioSize
-      } deriving (Show)
+instance FromJSON Asset
+instance ToJSON Asset
 
-data CurrentPortfolio = CurrentPortfolio [Asset]
-      deriving (Show)
+type PortfolioSize = Float
 
+data Portfolio = Portfolio
+      { assests  :: ![Asset]
+      , portSize :: !PortfolioSize
+      } deriving (Show, Generic)
 
+instance FromJSON Portfolio
+instance ToJSON Portfolio
 
+type CurrentPortfolio = Portfolio
+type InputPortfolio = Portfolio
 
+samplePort :: Portfolio
+samplePort = Portfolio [ Asset "GOOG" 0.60 52  98.0
+                       , Asset "AAPL" 0.30 136 22.0
+                       , Asset "TSLA" 0.10 239 8.0
+                       ]
+                       10000
 
+validSym a =
