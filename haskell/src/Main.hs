@@ -5,7 +5,6 @@ import BasePrelude
 import Numeric
 
 import Control.Lens
-import Control.Applicative
 
 import Data.Aeson
 import Data.Validation
@@ -44,7 +43,7 @@ mkRational s = case readFloat s of
 mkAlloc :: String -> AccValidation [Error] Rational
 mkAlloc s = case mkRational s of
                  Left err -> _Failure # [err]
-                 Right num -> if num >= 0 && num <= 100
+                 Right num -> if num >= 0 && num <= 1
                                  then _Success # num
                                  else _Failure # [InvalidAlloc num]
 
@@ -62,13 +61,16 @@ mkPrice s = case mkRational s of
                                  then _Success # num
                                  else _Failure # [InvalidPrice num]
 
-mkValidAsset :: RawAsset -> AccValidation [Error] ValidAsset
+mkValidAsset :: RawAsset -> AccValidation Error ValidAsset
 mkValidAsset (RawAsset symbol' alloc' qty' price') =
-  ValidAsset <$> mkSymbol symbol'
-             <*> mkAlloc alloc'
-             <*> mkQty qty'
-             <*> mkPrice price'
-
+  case asset of
+       AccFailure err -> _Failure # AssetErrors symbol' err
+       AccSuccess v -> _Success # v
+  where
+    asset = ValidAsset <$> mkSymbol symbol'
+                       <*> mkAlloc alloc'
+                       <*> mkQty qty'
+                       <*> mkPrice price'
 
 data RawPortfolio = RawPortfolio
       { raw_assests  :: ![RawAsset]
@@ -77,7 +79,51 @@ data RawPortfolio = RawPortfolio
 
 instance FromJSON RawPortfolio
 
-type PortfolioSize = Float
+validateAssets :: [RawAsset] -> AccValidation [Error] ValidAssetCollection
+validateAssets rawAssets =
+  case failedAssets of
+       [] -> case (totalAlloc validAssets) of
+                              1 -> _Success # validAssets
+                              t -> _Failure # [TotalAllocSize t]
+       _ -> _Failure # failedAssets
+  where
+    assets' = mkValidAsset `fmap` rawAssets
+    failedAssets = collectErrors assets'
+    validAssets = collectValid assets'
+
+totalAlloc :: ValidAssetCollection -> Rational
+totalAlloc v = sum $ alloc `fmap` v
+
+collectErrors :: [AccValidation Error ValidAsset] -> [Error]
+collectErrors ((AccFailure err): xs) = err : collectErrors xs
+collectErrors (_ : xs) = collectErrors xs
+collectErrors [] = []
+
+collectValid :: [AccValidation Error ValidAsset] -> [ValidAsset]
+collectValid ((AccSuccess validAsset): xs) = validAsset : collectValid xs
+collectValid (_ : xs) = collectValid xs
+collectValid [] = []
+
+type PortfolioSize = Rational
+
+mkValidPortSize :: String -> AccValidation [Error] PortfolioSize
+mkValidPortSize s = case mkRational s of
+                         Left err -> _Failure # [err]
+                         Right num -> if num > 0
+                                         then _Success # num
+                                         else _Failure # [NonPositivePortfolioSize num]
+
+type ValidAssetCollection = [ValidAsset]
+
+mkValidPortfolio :: RawPortfolio -> AccValidation Error ValidPortfolio
+mkValidPortfolio rawPort@(RawPortfolio assets size) =
+  case port' of
+       AccSuccess validPort -> _Success # validPort
+       AccFailure errs -> _Failure # InvalidPortfolio rawPort errs
+  where
+    port' = ValidPortfolio
+              <$> validateAssets assets
+              <*> mkValidPortSize size
 
 data ValidPortfolio = ValidPortfolio
       { assests  :: ![ValidAsset]
@@ -95,7 +141,9 @@ data Error = NullSymbol
            | InvalidQty String
            | InvalidPrice Rational
            | NonPositivePortfolioSize PortfolioSize
-           | TotalAllocSize Float
+           | TotalAllocSize Rational
+           | AssetErrors String [Error]
+           | InvalidPortfolio RawPortfolio [Error]
 
 instance Show Error where
   show = showError
@@ -107,7 +155,9 @@ showError (InvalidQty v) = "Quantities must be an integer greater than zero: " +
 showError (InvalidPrice v) = "Prices must be greater than 0: " ++ show v
 showError (InvalidAlloc v) = "Allocations are bounded by [0,100]: " ++ show v
 showError (NonPositivePortfolioSize v) = "The Portfolio Size must be greater than 0 but was given as: " ++ show v
-showError (TotalAllocSize v) = "The portfolio's total allocation must sum to 1: " ++ show v
+showError (TotalAllocSize v) = "The portfolio's total allocation must sum to 100: " ++ show v
+showError (AssetErrors v errs) = "The asset \"" ++ show v ++ "\" has the following errors: " ++ show errs
+showError (InvalidPortfolio v errs) = "The asset \"" ++ show v ++ "\" has the following errors: " ++ show errs
 
 sample_assets :: [RawAsset]
 sample_assets = [ RawAsset "GOOG" "0.60" "52"  "98.0"
