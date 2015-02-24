@@ -57,7 +57,7 @@ executable port-reb
   -- other-extensions:    
   
   -- Other library packages from which modules are imported.
-  build-depends:       base-prelude, yaml, aeson, text, validation
+  build-depends:       base, base-prelude, yaml, aeson, text, validation, lens
   
   -- Directories containing source files.
   hs-source-dirs:      src
