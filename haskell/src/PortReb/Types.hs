@@ -7,6 +7,8 @@ module PortReb.Types
   , OutputPortfolio
   , InputPortfolio
   , mkValidPortfolio
+  , PortfolioSize
+  , RebalancedAsset
   ) where
 
 import BasePrelude
@@ -36,6 +38,8 @@ data ValidAsset = ValidAsset
       } deriving (Show, Generic)
 
 instance ToJSON ValidAsset
+
+type RebalancedAsset = ValidAsset
 
 mkSymbol :: String -> AccValidation [Error] Symbol
 mkSymbol s = case length s of
