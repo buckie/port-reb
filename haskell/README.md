@@ -68,6 +68,7 @@ Tracking Band (Float): The band, asset's percent allocation +/- band, of which i
 ### Found Solution
 
 | Symbol | Price | Qty | Notional | Target Allocation | Solution Allocation | Solution Tracking Margin |
+|--------|-------|-----|----------|-------------------|---------------------|--------------------------|
 | GOOG | $98.00 | 62 | $6,076.00 | 60% | 60.76% | 1.25% |
 | AAPL | $22.00 | 134 | $2,948.00 | 30% | 29.48% | 1.76% |
 | TSLA | $8.0029122 | $976.00 | 10% | 9.76% | 2.46% |
