@@ -4,20 +4,22 @@ module PortReb.Types
   , ValidPortfolio (..)
   , RawAsset (..)
   , ValidAsset (..)
-  , OutputPortfolio
-  , InputPortfolio
+  , RebalancedPortfolio
   , mkValidPortfolio
   , PortfolioSize
   , RebalancedAsset
+  , TrackingBand
+  , defautlTrackingBand
   ) where
 
 import BasePrelude
 import Numeric
 
-import Control.Lens
+import Control.Lens hiding ((.=))
 
 import Data.Aeson
 import Data.Validation
+import Text.Printf (printf)
 
 type Symbol = String
 
@@ -37,7 +39,13 @@ data ValidAsset = ValidAsset
       , price  :: !Rational
       } deriving (Show, Generic)
 
-instance ToJSON ValidAsset
+instance ToJSON ValidAsset where
+  toJSON (ValidAsset s a q p) = object
+                                  [ "symbol" .= s
+                                  , "alloc"  .= prettyRational a
+                                  , "qty"    .= q
+                                  , "price"  .= prettyRational p
+                                  ]
 
 type RebalancedAsset = ValidAsset
 
@@ -96,13 +104,25 @@ data ValidPortfolio = ValidPortfolio
       , portSize :: !Rational
       } deriving (Show, Generic)
 
-instance ToJSON ValidPortfolio
+instance ToJSON ValidPortfolio where
+  toJSON (ValidPortfolio a size) = object
+                                        [ "assets" .= a
+                                        , "portSize" .= prettyRational size
+                                        ]
 
-type OutputPortfolio = ValidPortfolio
-type InputPortfolio = ValidPortfolio
+type RebalancedPortfolio = ValidPortfolio
 
 type PortfolioSize = Rational
 type ValidAssetCollection = [ValidAsset]
+
+type TrackingBand = Rational
+
+defautlTrackingBand :: TrackingBand
+defautlTrackingBand = (5 % 100)
+
+prettyRational :: Rational -> String
+prettyRational q = show (fromRational q :: Float)
+-- prettyRational q = printf "%.4f" (fromRational q :: Float)
 
 validateAssets :: [RawAsset] -> AccValidation [Error] ValidAssetCollection
 validateAssets rawAssets =

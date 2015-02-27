@@ -4,7 +4,7 @@ module Main where
 import BasePrelude
 
 import PortReb.Types
-
+import PortReb.Rebalancer
 import Data.Validation
 
 sAssets :: [RawAsset]
