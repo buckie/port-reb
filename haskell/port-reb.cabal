@@ -50,6 +50,8 @@ executable port-reb
   -- .hs or .lhs file containing the Main module.
   main-is:             Main.hs
   
+  -- ghc-options: -O2 -static
+  -- ld-options: -static -pthread
   -- Modules included in this executable, other than Main.
   -- other-modules:       
   
@@ -57,7 +59,7 @@ executable port-reb
   -- other-extensions:    
   
   -- Other library packages from which modules are imported.
-  build-depends:       base, base-prelude, yaml, aeson, text, validation, lens
+  build-depends:       base, base-prelude, yaml, aeson, text, validation, lens, bytestring
   
   -- Directories containing source files.
   hs-source-dirs:      src

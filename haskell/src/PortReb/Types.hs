@@ -19,7 +19,6 @@ import Control.Lens hiding ((.=))
 
 import Data.Aeson
 import Data.Validation
-import Text.Printf (printf)
 
 type Symbol = String
 
@@ -37,7 +36,7 @@ data ValidAsset = ValidAsset
       , alloc  :: !Rational
       , qty    :: !Integer
       , price  :: !Rational
-      } deriving (Show, Generic)
+      } deriving (Show, Eq, Generic)
 
 instance ToJSON ValidAsset where
   toJSON (ValidAsset s a q p) = object
@@ -48,6 +47,9 @@ instance ToJSON ValidAsset where
                                   ]
 
 type RebalancedAsset = ValidAsset
+
+prettyRational :: Rational -> String
+prettyRational q = show (fromRational q :: Float)
 
 mkSymbol :: String -> AccValidation [Error] Symbol
 mkSymbol s = case length s of
@@ -120,10 +122,6 @@ type TrackingBand = Rational
 defautlTrackingBand :: TrackingBand
 defautlTrackingBand = (5 % 100)
 
-prettyRational :: Rational -> String
-prettyRational q = show (fromRational q :: Float)
--- prettyRational q = printf "%.4f" (fromRational q :: Float)
-
 validateAssets :: [RawAsset] -> AccValidation [Error] ValidAssetCollection
 validateAssets rawAssets =
   case failedAssets of
@@ -149,6 +147,9 @@ collectValid ((AccSuccess validAsset): xs) = validAsset : collectValid xs
 collectValid (_ : xs) = collectValid xs
 collectValid [] = []
 
+checkAssetUnique :: ValidPortfolio -> Bool
+checkAssetUnique (ValidPortfolio assets' _) = (nub assets') == assets'
+
 mkValidPortSize :: String -> AccValidation [Error] PortfolioSize
 mkValidPortSize s = case mkRational s of
                          Left err -> _Failure # [err]
@@ -159,15 +160,18 @@ mkValidPortSize s = case mkRational s of
 
 mkValidPortfolio :: RawPortfolio -> AccValidation Error ValidPortfolio
 mkValidPortfolio rawPort@(RawPortfolio assets size) =
-  case port' of
-       AccSuccess validPort -> _Success # validPort
+  case portfolio of
        AccFailure errs -> _Failure # InvalidPortfolio rawPort errs
+       AccSuccess validPort ->if checkAssetUnique validPort
+                                 then _Success # validPort
+                                 else _Failure # InvalidPortfolio rawPort [NonUniqueAssets]
   where
-    port' = ValidPortfolio
-              <$> validateAssets assets
-              <*> mkValidPortSize size
+    portfolio = ValidPortfolio
+                  <$> validateAssets assets
+                  <*> mkValidPortSize size
 
 data Error = NullSymbol
+           | NonUniqueAssets
            | InvalidRational String String
            | InvalidAlloc Rational
            | InvalidQty String
@@ -182,8 +186,9 @@ instance Show Error where
   show (InvalidRational s leftovers) = "Unable to parse \"" ++ show s ++ "\" into rational due to \"" ++ show leftovers ++ "\""
   show (InvalidQty v) = "Quantities must be an integer greater than zero: " ++ show v
   show (InvalidPrice v) = "Prices must be greater than 0: " ++ show v
-  show (InvalidAlloc v) = "Allocations are bounded by [0,100]: " ++ show v
+  show (InvalidAlloc v) = "Allocations are bounded by [0,1]: " ++ show v
   show (NonPositivePortfolioSize v) = "The Portfolio Size must be greater than 0 but was given as: " ++ show v
   show (TotalAllocSize v) = "The portfolio's total allocation must sum to 100: " ++ show v
   show (AssetErrors v errs) = "The asset \"" ++ show v ++ "\" has the following errors: " ++ show errs
   show (InvalidPortfolio v errs) = "The asset \"" ++ show v ++ "\" has the following errors: " ++ show errs
+  show (NonUniqueAssets) = "The assets in the portfolio are not unique!"
