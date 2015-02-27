@@ -41,7 +41,7 @@ Portfolio Size (portSize) must be GT 0.
 
 ### Parameter's
 
-Tracking Band (Float): The band, asset's percent allocation +/- band, of which is considered a valid rebalance. The entire space defined by this band is searched with the portfolio that minimized the uninvested portion being selected. Default value of this is 5%
+Tracking Band (Float): Defined as alloc +/- ((alloc - band)/alloc). This defines the space of valid rebalances. The entire space is searched with the portfolio that minimized the uninvested portion being selected. When multiple optimal solutions (rebalanced portfolio size == portfolio size) the first solution is returned.
 
 ### Sample with tracking band == default (5%)
 
