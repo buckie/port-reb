@@ -9,7 +9,7 @@ Allocation's (alloc) must sum to exactly one.
 
 Prices must be GT 0.
 
-Qty must be GTE 0.
+Qty must be an integer GTE 0.
 
 Symbol must be non-null and unique.
 
