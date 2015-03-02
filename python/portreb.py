@@ -422,7 +422,6 @@ def diff_portfolios(old, new):
 
 def main():
     import argparse
-
     parser = argparse.ArgumentParser(description='Portfolio Rebalancer')
     parser.add_argument('filename', action='store', help='file to read the current portfolio from')
     parser.add_argument('--band', action='store', help='tracking band with the domain of [0,1]. Defaults to 5%')
@@ -430,8 +429,7 @@ def main():
     args = parser.parse_args()
     if args.test:
         import doctest
-
-        doctest.testmod()
+        doctest.testmod(verbose=True)
     elif args.filename:
         if args.band:
             band = validate_decimal(args.band, 'Tracking Band', 'Command Line',
