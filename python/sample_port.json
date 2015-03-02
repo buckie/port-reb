@@ -1,0 +1,17 @@
+{
+  "size":"10000.0",
+  "assets":[
+  {"qty":"52",
+   "symbol":"GOOG",
+   "price":"98.0",
+   "alloc":"0.6"},
+  {"qty":"136",
+   "symbol":"AAPL",
+   "price":"22.0",
+   "alloc":"0.3"},
+  {"qty":"239",
+   "symbol":"TSLA",
+   "price":"8.0",
+   "alloc":"0.1"}
+  ]
+}
